@@ -227,7 +227,7 @@ Status RowBatch::Serialize(
 
 Status RowBatch::Serialize(
     OutboundRowBatch* output_batch, bool full_dedup, TrackedString* compression_scratch) {
-  bool is_compressed;
+  bool is_compressed = false;
   output_batch->tuple_offsets_.clear();
 
   DedupMap distinct_tuples;
@@ -252,18 +252,8 @@ Status RowBatch::Serialize(
     return Status(TErrorCode::ROW_BATCH_TOO_LARGE, size, numeric_limits<int32_t>::max());
   }
   output_batch->tuple_data_.resize(size);
-
   RETURN_IF_ERROR(Serialize(full_dedup ? &distinct_tuples : nullptr,
       output_batch, &is_compressed, size, compression_scratch));
-
-  // Initialize the RowBatchHeaderPB
-  RowBatchHeaderPB* header = &output_batch->header_;
-  header->Clear();
-  header->set_num_rows(num_rows_);
-  header->set_num_tuples_per_row(row_desc_->tuple_descriptors().size());
-  header->set_uncompressed_size(size);
-  header->set_compression_type(
-      is_compressed ? CompressionTypePB::LZ4 : CompressionTypePB::NONE);
   return Status::OK();
 }
 
@@ -273,41 +263,8 @@ Status RowBatch::Serialize(DedupMap* distinct_tuples, OutboundRowBatch* output_b
   std::vector<int32_t>* tuple_offsets = &output_batch->tuple_offsets_;
 
   RETURN_IF_ERROR(SerializeInternal(size, distinct_tuples, tuple_offsets, tuple_data));
-
-  *is_compressed = false;
-
-  if (size > 0 && compression_scratch != nullptr) {
-    // Try compressing tuple_data to compression_scratch, swap if compressed data is
-    // smaller.
-    Lz4Compressor compressor(nullptr, false);
-    RETURN_IF_ERROR(compressor.Init());
-    auto compressor_cleanup =
-        MakeScopeExitTrigger([&compressor]() { compressor.Close(); });
-
-    // If the input size is too large for LZ4 to compress, MaxOutputLen() will return 0.
-    int64_t compressed_size = compressor.MaxOutputLen(size);
-    if (compressed_size == 0) {
-      return Status(TErrorCode::LZ4_COMPRESSION_INPUT_TOO_LARGE, size);
-    }
-    DCHECK_GT(compressed_size, 0);
-    if (compression_scratch->size() < compressed_size) {
-      compression_scratch->resize(compressed_size);
-    }
-
-    uint8_t* input = reinterpret_cast<uint8_t*>(tuple_data);
-    uint8_t* compressed_output = const_cast<uint8_t*>(
-        reinterpret_cast<const uint8_t*>(compression_scratch->data()));
-    RETURN_IF_ERROR(
-        compressor.ProcessBlock(true, size, input, &compressed_size, &compressed_output));
-    if (LIKELY(compressed_size < size)) {
-      compression_scratch->resize(compressed_size);
-      output_batch->tuple_data_.swap(*compression_scratch);
-      *is_compressed = true;
-      // TODO: could copy to a smaller buffer if compressed data is much smaller to
-      //       save memory
-    }
-    VLOG_ROW << "uncompressed size: " << size << ", compressed size: " << compressed_size;
-  }
+  RETURN_IF_ERROR(output_batch->PrepareForSend(row_desc_->tuple_descriptors().size(),
+      compression_scratch));
   return Status::OK();
 }
 
@@ -542,6 +499,31 @@ void RowBatch::VLogRows(const string& context) {
   VLOG_ROW << context << ": #rows=" << num_rows_;
   for (int i = 0; i < num_rows_; ++i) {
     VLOG_ROW << PrintRow(GetRow(i), *row_desc_);
+  }
+}
+
+void RowBatch::CopyRows(RowBatch* src, int num_rows, int src_offset, int dst_offset) {
+  DCHECK_GT(num_rows, 0);
+  DCHECK_GE(num_tuples_per_row_, src->num_tuples_per_row_);
+  DCHECK_GE(src_offset, 0);
+  DCHECK_GE(dst_offset, 0);
+  DCHECK_GE(capacity_, num_rows + dst_offset);
+  DCHECK_GE(src->num_rows_, num_rows + src_offset);
+  bool same_layout = num_tuples_per_row_ == src->num_tuples_per_row_;
+  if (same_layout) {
+    // Fast path, single copy.
+    TupleRow* dst_row = GetRow(dst_offset);
+    TupleRow* src_row = src->GetRow(src_offset);
+    memcpy(dst_row, src_row, num_rows * num_tuples_per_row_ * sizeof(Tuple*));
+    return;
+  }
+  // Slow path, null tuples and copy prefixes.
+  DCHECK_GT(num_tuples_per_row_, src->num_tuples_per_row_);
+  for (int i = 0; i < num_rows; i++) {
+    TupleRow* dst_row = GetRow(dst_offset + i);
+    TupleRow* src_row = src->GetRow(src_offset + i);
+    ClearRow(dst_row);
+    src->CopyRow(src_row, dst_row);
   }
 }
 

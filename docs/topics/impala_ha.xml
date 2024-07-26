@@ -18,7 +18,7 @@ specific language governing permissions and limitations
 under the License.
 -->
 <!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
-<concept id="impala_HA">
+<concept id="impala_ha">
   <title>Configuring Impala for High Availability</title>
   <prolog>
     <metadata>
@@ -41,7 +41,10 @@ under the License.
       Impala cluster so that Impala cluster could survive failures of StateStore or Catalog.</p>
     <p><b>Prerequisite:</b></p>
     <p>To enable High Availability for Impala CatalogD and StateStore, you must configure at least
-      two Impala catalogd, two StateStore instances on two different nodes.</p>
+      two Impala CatalogD, two StateStore instances on two different nodes.<note
+        id="note_hbm_zng_fcc" type="note">CatalogD HA and Statestore HA are independent features.
+        Users can enable CatalogD HA, Statestore HA, or both CatalogD HA and Statestore
+      HA.</note></p>
     <p outputclass="toc"/>
   </conbody>
 </concept>

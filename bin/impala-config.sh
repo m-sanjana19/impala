@@ -85,13 +85,13 @@ export USE_AVRO_CPP=${USE_AVRO_CPP:=false}
 # moving to a different build of the toolchain, e.g. when a version is bumped or a
 # compile option is changed. The build id can be found in the output of the toolchain
 # build jobs, it is constructed from the build number and toolchain git hash prefix.
-export IMPALA_TOOLCHAIN_BUILD_ID_AARCH64=34-f93e2c9a86
-export IMPALA_TOOLCHAIN_BUILD_ID_X86_64=422-f93e2c9a86
+export IMPALA_TOOLCHAIN_BUILD_ID_AARCH64=47-51aac19036
+export IMPALA_TOOLCHAIN_BUILD_ID_X86_64=442-51aac19036
 export IMPALA_TOOLCHAIN_REPO=\
 ${IMPALA_TOOLCHAIN_REPO:-https://github.com/cloudera/native-toolchain.git}
 export IMPALA_TOOLCHAIN_BRANCH=${IMPALA_TOOLCHAIN_BRANCH:-master}
 export IMPALA_TOOLCHAIN_COMMIT_HASH=\
-${IMPALA_TOOLCHAIN_COMMIT_HASH-f93e2c9a865c80cafd76b872ad04400877766a2f}
+${IMPALA_TOOLCHAIN_COMMIT_HASH-51aac190369b543daddff2c0f29f54ded149a5f9}
 # Compare the build ref in build IDs by removing everything up-to-and-including the
 # first hyphen.
 if [ "${IMPALA_TOOLCHAIN_BUILD_ID_AARCH64#*-}" \
@@ -141,7 +141,7 @@ export IMPALA_GLOG_VERSION=0.3.5-p3
 unset IMPALA_GLOG_URL
 export IMPALA_GPERFTOOLS_VERSION=2.10
 unset IMPALA_GPERFTOOLS_URL
-export IMPALA_GTEST_VERSION=1.6.0
+export IMPALA_GTEST_VERSION=1.14.0
 unset IMPALA_GTEST_URL
 export IMPALA_JWT_CPP_VERSION=0.5.0
 unset IMPALA_JWT_CPP_URL
@@ -149,9 +149,9 @@ export IMPALA_LIBEV_VERSION=4.20-p1
 unset IMPALA_LIBEV_URL
 export IMPALA_LIBUNWIND_VERSION=1.7.2-p1
 unset IMPALA_LIBUNWIND_URL
-export IMPALA_LLVM_VERSION=5.0.1-p7
+export IMPALA_LLVM_VERSION=5.0.1-p8
 unset IMPALA_LLVM_URL
-export IMPALA_LLVM_ASAN_VERSION=5.0.1-p7
+export IMPALA_LLVM_ASAN_VERSION=5.0.1-p8
 unset IMPALA_LLVM_ASAN_URL
 
 # To limit maximum memory available for the mini-cluster and CDH cluster, add the
@@ -165,7 +165,7 @@ export IMPALA_LLVM_UBSAN_BASE_VERSION=5.0.1
 
 # Debug builds should use the release+asserts build to get additional coverage.
 # Don't use the LLVM debug build because the binaries are too large to distribute.
-export IMPALA_LLVM_DEBUG_VERSION=5.0.1-asserts-p7
+export IMPALA_LLVM_DEBUG_VERSION=5.0.1-asserts-p8
 unset IMPALA_LLVM_DEBUG_URL
 export IMPALA_LZ4_VERSION=1.9.3
 unset IMPALA_LZ4_URL
@@ -179,7 +179,7 @@ export IMPALA_PROTOBUF_VERSION=3.14.0
 unset IMPALA_PROTOBUF_URL
 export IMPALA_PROTOBUF_CLANG_VERSION=3.14.0-clangcompat-p2
 unset IMPALA_PROTOBUF_CLANG_URL
-export IMPALA_POSTGRES_JDBC_DRIVER_VERSION=42.5.1
+export IMPALA_POSTGRES_JDBC_DRIVER_VERSION=42.5.6
 unset IMPALA_POSTGRES_JDBC_DRIVER_URL
 export IMPALA_PYTHON_VERSION=2.7.16
 unset IMPALA_PYTHON_URL
@@ -293,10 +293,11 @@ export IMPALA_ORC_JAVA_VERSION=1.7.6
 export IMPALA_PAC4J_VERSION=4.5.5
 export IMPALA_RELOAD4j_VERSION=1.2.22
 export IMPALA_SLF4J_VERSION=2.0.3
-export IMPALA_SPRINGFRAMEWORK_VERSION=5.3.27
+export IMPALA_SPRINGFRAMEWORK_VERSION=5.3.37
 export IMPALA_XMLSEC_VERSION=2.2.6
 export IMPALA_OBS_VERSION=3.1.1-hw-42
 export IMPALA_DBCP2_VERSION=2.9.0
+export IMPALA_DROPWIZARD_METRICS_VERSION=4.2.26
 
 # When Impala is building docker images on Redhat-based distributions,
 # it is useful to be able to customize the base image. Some users will
@@ -1062,9 +1063,6 @@ CLASSPATH="$IMPALA_FE_DIR/src/test/resources:$CLASSPATH"
 
 # A marker in the environment to prove that we really did source this file
 export IMPALA_CONFIG_SOURCED=1
-
-# Whether to strip the impalad binary when generating deployment package
-export STRIP_DEPLOYMENT_IMPALAD=true
 
 echo "IMPALA_VERSION          = $IMPALA_VERSION"
 echo "IMPALA_HOME             = $IMPALA_HOME"
